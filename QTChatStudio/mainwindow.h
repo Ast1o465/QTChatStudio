@@ -20,8 +20,10 @@ public:
 
 private slots:
     void onSendButtonClicked();
+    void onSaveChatButtonClicked();
     void onAiResponseReceived(const QString &response);
     void onAiError(const QString &error);
+    void onNewChatActionTriggered();
 
 private:
     Ui::MainWindow *ui;
