@@ -6,6 +6,8 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_requestFromMainTab(false)
+    , m_currentTabIndex(0)
 {
     ui->setupUi(this);
     
@@ -27,15 +29,25 @@ void MainWindow::setupConnections()
     connect(m_chatEngine, &aichat::responseReady, this, &MainWindow::onAiResponseReceived);
     connect(m_chatEngine, &aichat::errorOccurred, this, &MainWindow::onAiError);
     connect(ui->action_new_chat, &QAction::triggered, this, &MainWindow::onNewChatActionTriggered);
+    connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     
     // Send message on Enter key press
     connect(ui->le_input, &QLineEdit::returnPressed, this, &MainWindow::onSendButtonClicked);
+}
+
+void MainWindow::onTabChanged(int index)
+{
+    m_currentTabIndex = index;
+    qDebug() << "Active tab changed to:" << index;
 }
 
 void MainWindow::onSendButtonClicked()
 {
     QString userMessage = ui->le_input->text().trimmed();
     if (userMessage.isEmpty()) return;
+    
+    // Set flag that the request is from the main tab
+    m_requestFromMainTab = true;
     
     addMessageToChat("You", userMessage);
     ui->le_input->clear();
@@ -49,21 +61,33 @@ void MainWindow::onSendButtonClicked()
 
 void MainWindow::onSaveChatButtonClicked()
 {
-    
+
 }
 
 void MainWindow::onAiResponseReceived(const QString &response)
 {
-    addMessageToChat("AI", response);
-    ui->btn_send->setEnabled(true);
-    ui->btn_send->setText("Send");
+    // Check if the request was sent from the main tab and if it's active
+    if (m_requestFromMainTab && m_currentTabIndex == 0) {
+        addMessageToChat("AI", response);
+        ui->btn_send->setEnabled(true);
+        ui->btn_send->setText("Send");
+    }
+    
+    // Reset the flag after processing the response
+    m_requestFromMainTab = false;
 }
 
 void MainWindow::onAiError(const QString &error)
 {
-    addMessageToChat("System", QString("Error: %1").arg(error));
-    ui->btn_send->setEnabled(true);
-    ui->btn_send->setText("Send");
+    // Check if the request was sent from the main tab and if it's active
+    if (m_requestFromMainTab && m_currentTabIndex == 0) {
+        addMessageToChat("System", QString("Error: %1").arg(error));
+        ui->btn_send->setEnabled(true);
+        ui->btn_send->setText("Send");
+    }
+    
+    // Reset the flag after processing the error
+    m_requestFromMainTab = false;
 }
 
 void MainWindow::onNewChatActionTriggered()
@@ -98,5 +122,4 @@ void MainWindow::addMessageToChat(const QString &sender, const QString &message)
 {
     QString formattedMessage = QString("<b>%1:</b> %2<br>").arg(sender, message);
     ui->te_chat->append(formattedMessage);
-}
 }
