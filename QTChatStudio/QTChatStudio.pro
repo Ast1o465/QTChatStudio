@@ -10,14 +10,17 @@ CONFIG += c++17
 
 SOURCES += \
     aichat.cpp \
+    chattab.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
     aichat.h \
+    chattab.h \
     mainwindow.h
 
 FORMS += \
+    chattab.ui\
     mainwindow.ui
 
 # Default rules for deployment.
