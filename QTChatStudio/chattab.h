@@ -28,6 +28,9 @@ public:
     
     // New method to get chat text
     QString getChatText() const;
+    
+    // New method to set HTML content
+    void setChatHtml(const QString &html);
 
 private slots:
     void onSendButtonClicked();

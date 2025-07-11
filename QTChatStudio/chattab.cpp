@@ -96,3 +96,11 @@ QString chatTab::getChatText() const
     }
     return QString();
 }
+
+void chatTab::setChatHtml(const QString &html)
+{
+    if (ui && ui->te_chat) {
+        ui->te_chat->clear();
+        ui->te_chat->setHtml(html);
+    }
+}

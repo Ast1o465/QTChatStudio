@@ -13,6 +13,8 @@
 #include <QMessageBox>
 #include <QTextStream>
 #include <QCoreApplication>
+#include <QFileDialog>
+#include <QFileInfo>
 #include "chattab.h"
 #include "aichat.h"
 
@@ -33,9 +35,11 @@ public:
 private slots:
     void onSendButtonClicked();
     void onSaveChatActionTriggered();
+    void onNewChatActionTriggered();
+    void onOpenChatActionTriggered();
+    
     void onAiResponseReceived(const QString &response);
     void onAiError(const QString &error);
-    void onNewChatActionTriggered();
     void onTabChanged(int index); // Track active tab
 
 private:

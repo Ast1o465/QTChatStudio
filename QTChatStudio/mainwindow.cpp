@@ -26,9 +26,11 @@ void MainWindow::setupConnections()
     connect(m_chatEngine, &aichat::responseReady, this, &MainWindow::onAiResponseReceived);
     connect(m_chatEngine, &aichat::errorOccurred, this, &MainWindow::onAiError);
     connect(ui->btn_send, &QPushButton::clicked, this, &MainWindow::onSendButtonClicked);
-    connect(ui->action_new_chat, &QAction::triggered, this, &MainWindow::onNewChatActionTriggered);
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
+
+    connect(ui->action_new_chat, &QAction::triggered, this, &MainWindow::onNewChatActionTriggered);
     connect(ui->action_save_chat, &QAction::triggered, this, &MainWindow::onSaveChatActionTriggered);
+    connect(ui->action_open_file, &QAction::triggered, this, &MainWindow::onOpenChatActionTriggered);
     
     // Send message on Enter key press
     connect(ui->le_input, &QLineEdit::returnPressed, this, &MainWindow::onSendButtonClicked);
@@ -130,7 +132,6 @@ void MainWindow::onSaveChatActionTriggered()
     }
 }
 
-
 void MainWindow::onNewChatActionTriggered()
 {
     int tabCount = ui->tabWidget->count();
@@ -157,6 +158,54 @@ void MainWindow::onNewChatActionTriggered()
     // Add the new tab with the chatTab widget
     ui->tabWidget->addTab(newChatTab, tabName);
     ui->tabWidget->setCurrentIndex(tabCount);   
+}
+
+void MainWindow::onOpenChatActionTriggered()
+{
+    // Set up history directory
+    QString historyDir = QCoreApplication::applicationDirPath() + "/chat_history";
+    QDir().mkpath(historyDir); // Create directory if it doesn't exist
+    
+    // Get file from user
+    QString filePath = QFileDialog::getOpenFileName(this, "Open Chat History", 
+                                                  historyDir, "Text Files (*.txt)");
+    if (filePath.isEmpty()) return;
+    
+    // Read file content
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Could not open file: " + file.errorString());
+        return;
+    }
+    
+    QString chatContent = QTextStream(&file).readAll();
+    file.close();
+    
+    // Display content in appropriate tab
+    if (m_currentTabIndex == 0) {
+        // Update main tab
+        ui->te_chat->clear();
+        ui->te_chat->setHtml(chatContent);
+    } else {
+        // Create new tab with content
+        chatTab *newTab = new chatTab(this);
+        newTab->setAiEngine(m_chatEngine);
+        
+        // Configure new tab
+        QStringList models;
+        for(int i = 0; i < ui->cb_models->count(); i++) {
+            models << ui->cb_models->itemText(i);
+        }
+        newTab->setModels(models);
+        newTab->setupConnections();
+        
+        // Add and switch to new tab
+        QString fileName = QFileInfo(filePath).fileName();
+        ui->tabWidget->addTab(newTab, 
+                            QString("Chat %1 (%2)").arg(ui->tabWidget->count() + 1).arg(fileName));
+        newTab->setChatHtml(chatContent);
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    }
 }
 
 void MainWindow::addMessageToChat(const QString &sender, const QString &message)
