@@ -22,6 +22,12 @@ public:
     void setAiEngine(aichat *engine);
     void setModels(const QStringList &models);
     void setupConnections();
+    
+    // Add access to UI for MainWindow
+    friend class MainWindow;
+    
+    // New method to get chat text
+    QString getChatText() const;
 
 private slots:
     void onSendButtonClicked();

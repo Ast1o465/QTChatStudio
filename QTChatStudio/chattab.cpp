@@ -29,11 +29,11 @@ void chatTab::setModels(const QStringList &models)
 
 void chatTab::setupConnections()
 {
-    // Настройка соединений, аналогичных тем, что в MainWindow
+    // Setup connections similar to those in MainWindow
     connect(ui->btn_send, &QPushButton::clicked, this, &chatTab::onSendButtonClicked);
     connect(ui->le_input, &QLineEdit::returnPressed, this, &chatTab::onSendButtonClicked);
     
-    // Соединения с AI движком настраиваются динамически при отправке сообщения
+    // Connections to AI engine are set up dynamically when sending a message
 }
 
 void chatTab::onSendButtonClicked()
@@ -47,11 +47,11 @@ void chatTab::onSendButtonClicked()
     if (m_chatEngine) {
         QString selectedModel = ui->cb_models->currentText();
         
-        // Создаем временные соединения для получения ответа
+        // Create temporary connections for receiving a response
         connect(m_chatEngine, &aichat::responseReady, this, &chatTab::onAiResponseReceived, Qt::UniqueConnection);
         connect(m_chatEngine, &aichat::errorOccurred, this, &chatTab::onAiError, Qt::UniqueConnection);
         
-        // Отправляем сообщение
+        // Send the message
         m_chatEngine->sendMessage(userMessage, selectedModel);
         
         ui->btn_send->setEnabled(false);
@@ -67,7 +67,7 @@ void chatTab::onAiResponseReceived(const QString &response)
     ui->btn_send->setEnabled(true);
     ui->btn_send->setText("Send");
     
-    // Отключаем временные соединения
+    // Disconnect temporary connections
     disconnect(m_chatEngine, &aichat::responseReady, this, &chatTab::onAiResponseReceived);
     disconnect(m_chatEngine, &aichat::errorOccurred, this, &chatTab::onAiError);
 }
@@ -78,7 +78,7 @@ void chatTab::onAiError(const QString &error)
     ui->btn_send->setEnabled(true);
     ui->btn_send->setText("Send");
     
-    // Отключаем временные соединения
+    // Disconnect temporary connections
     disconnect(m_chatEngine, &aichat::responseReady, this, &chatTab::onAiResponseReceived);
     disconnect(m_chatEngine, &aichat::errorOccurred, this, &chatTab::onAiError);
 }
@@ -87,4 +87,12 @@ void chatTab::addMessageToChat(const QString &sender, const QString &message)
 {
     QString formattedMessage = QString("<b>%1:</b> %2<br>").arg(sender, message);
     ui->te_chat->append(formattedMessage);
+}
+
+QString chatTab::getChatText() const
+{
+    if (ui && ui->te_chat) {
+        return ui->te_chat->toPlainText();
+    }
+    return QString();
 }

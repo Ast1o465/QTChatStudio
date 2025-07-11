@@ -1,7 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "QDebug"
-#include "chattab.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -25,11 +23,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupConnections()
 {
-    connect(ui->btn_send, &QPushButton::clicked, this, &MainWindow::onSendButtonClicked);
     connect(m_chatEngine, &aichat::responseReady, this, &MainWindow::onAiResponseReceived);
     connect(m_chatEngine, &aichat::errorOccurred, this, &MainWindow::onAiError);
+    connect(ui->btn_send, &QPushButton::clicked, this, &MainWindow::onSendButtonClicked);
     connect(ui->action_new_chat, &QAction::triggered, this, &MainWindow::onNewChatActionTriggered);
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
+    connect(ui->action_save_chat, &QAction::triggered, this, &MainWindow::onSaveChatActionTriggered);
     
     // Send message on Enter key press
     connect(ui->le_input, &QLineEdit::returnPressed, this, &MainWindow::onSendButtonClicked);
@@ -59,11 +58,6 @@ void MainWindow::onSendButtonClicked()
     ui->btn_send->setText("Sending...");
 }
 
-void MainWindow::onSaveChatButtonClicked()
-{
-
-}
-
 void MainWindow::onAiResponseReceived(const QString &response)
 {
     // Check if the request was sent from the main tab and if it's active
@@ -89,6 +83,53 @@ void MainWindow::onAiError(const QString &error)
     // Reset the flag after processing the error
     m_requestFromMainTab = false;
 }
+
+void MainWindow::onSaveChatActionTriggered()
+{
+    qDebug() << "Saving chat...";
+    
+    // Create directory for chat history
+    QString appDir = QCoreApplication::applicationDirPath();
+    QDir dir(appDir + "/chat_history");
+    if (!dir.exists()) {
+        dir.mkpath(".");
+        qDebug() << "Created directory:" << dir.absolutePath();
+    }
+    
+    // Generate unique filename with timestamp
+    QString filename = dir.absolutePath() + "/chat_" + 
+                      QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss") + ".txt";
+    
+    // Get text from active tab
+    QString chatText;
+    if (m_currentTabIndex == 0) {
+        // Get text from main tab
+        chatText = ui->te_chat ? ui->te_chat->toPlainText() : "";
+    } else {
+        // Get text from custom chat tab
+        chatTab *activeTab = qobject_cast<chatTab*>(ui->tabWidget->currentWidget());
+        chatText = activeTab ? activeTab->getChatText() : "";
+    }
+    
+    // Check if we have content to save
+    if (chatText.isEmpty()) {
+        QMessageBox::warning(this, "Warning", "No chat content to save");
+        return;
+    }
+    
+    // Save chat to file
+    QFile file(filename);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << chatText;
+        file.close();
+        QMessageBox::information(this, "Success", QString("Chat saved to %1").arg(filename));
+    } else {
+        QMessageBox::critical(this, "Error", 
+                            QString("Could not save chat: %1").arg(file.errorString()));
+    }
+}
+
 
 void MainWindow::onNewChatActionTriggered()
 {

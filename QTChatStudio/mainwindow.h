@@ -2,6 +2,18 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QTabWidget>
+#include <QAction>
+#include <QDebug>
+#include <QFile>
+#include <QDir>
+#include <QDateTime>
+#include <QMessageBox>
+#include <QTextStream>
+#include <QCoreApplication>
+#include "chattab.h"
 #include "aichat.h"
 
 QT_BEGIN_NAMESPACE
@@ -20,7 +32,7 @@ public:
 
 private slots:
     void onSendButtonClicked();
-    void onSaveChatButtonClicked();
+    void onSaveChatActionTriggered();
     void onAiResponseReceived(const QString &response);
     void onAiError(const QString &error);
     void onNewChatActionTriggered();
