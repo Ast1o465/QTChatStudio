@@ -29,6 +29,7 @@ void MainWindow::setupConnections()
     connect(m_chatEngine, &aichat::errorOccurred, this, &MainWindow::onAiError);
     connect(ui->btn_send, &QPushButton::clicked, this, &MainWindow::onSendButtonClicked);
     connect(ui->btn_update_models, &QPushButton::clicked, this, &MainWindow::onUpdateModelsButtonClicked);
+    connect(ui->btn_delete_model, &QPushButton::clicked, this, &MainWindow::onDeleteButtonClicked);
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
 
     connect(ui->action_new_chat, &QAction::triggered, this, &MainWindow::onNewChatActionTriggered);
@@ -110,6 +111,43 @@ void MainWindow::onUpdateModelsButtonClicked()
             tab->setModels(modelNames);
         }
     }
+}
+
+void MainWindow::onDeleteButtonClicked()
+{
+    // Get the selected model from the combobox
+    QString modelName = ui->cb_available_models->currentText();
+    
+    if (modelName.isEmpty()) {
+        QMessageBox::warning(this, "Warning", "No model selected");
+        return;
+    }
+    
+    // Confirm deletion
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this, 
+        "Delete Model", 
+        QString("Are you sure you want to delete model '%1'?").arg(modelName),
+        QMessageBox::Yes | QMessageBox::No
+    );
+    
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+    
+    // Run the deletion command
+    QProcess process;
+    process.start("ollama", QStringList() << "rm" << modelName);
+    
+    if (!process.waitForFinished()) {
+        QMessageBox::critical(this, "Error", "Error running Ollama");
+        return;
+    }
+    
+    // Update the models list after deletion
+    QTimer::singleShot(100, this, &MainWindow::onUpdateModelsButtonClicked);
+    
+    QMessageBox::information(this, "Success", QString("Model '%1' has been deleted").arg(modelName));
 }
 
 void MainWindow::onAiResponseReceived(const QString &response)

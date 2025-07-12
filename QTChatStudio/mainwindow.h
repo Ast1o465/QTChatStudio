@@ -35,6 +35,8 @@ public:
 private slots:
     void onSendButtonClicked();
     void onUpdateModelsButtonClicked();
+    void onDeleteButtonClicked();
+
 
     void onSaveChatActionTriggered();
     void onNewChatActionTriggered();
