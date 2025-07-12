@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QProcess>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,9 +13,9 @@ MainWindow::MainWindow(QWidget *parent)
     
     m_chatEngine = new aichat(this);
     setupConnections();
-    
+
     // Set default models
-    ui->cb_models->addItems({"llama3.2", "DeepSeek-R1", "codellama", "gemma3:1b"});
+    QTimer::singleShot(100, this, &MainWindow::onUpdateModelsButtonClicked);
 }
 
 MainWindow::~MainWindow()
@@ -26,6 +28,7 @@ void MainWindow::setupConnections()
     connect(m_chatEngine, &aichat::responseReady, this, &MainWindow::onAiResponseReceived);
     connect(m_chatEngine, &aichat::errorOccurred, this, &MainWindow::onAiError);
     connect(ui->btn_send, &QPushButton::clicked, this, &MainWindow::onSendButtonClicked);
+    connect(ui->btn_update_models, &QPushButton::clicked, this, &MainWindow::onUpdateModelsButtonClicked);
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
 
     connect(ui->action_new_chat, &QAction::triggered, this, &MainWindow::onNewChatActionTriggered);
@@ -58,6 +61,55 @@ void MainWindow::onSendButtonClicked()
     
     ui->btn_send->setEnabled(false);
     ui->btn_send->setText("Sending...");
+}
+
+void MainWindow::onUpdateModelsButtonClicked()
+{
+    // Run ollama list command
+    QProcess process;
+    process.start("ollama", QStringList() << "list");
+    
+    if (!process.waitForFinished()) {
+        qDebug() << "Error running Ollama";
+        return;
+    }
+    
+    // Get output and log available models
+    QString output = QString::fromUtf8(process.readAllStandardOutput());
+    QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+    
+    // Prepare model names list
+    QStringList modelNames;
+    
+    // Process each line from output
+    for (const QString& line : lines) {
+        qDebug() << "Ollama update";
+        // qDebug() << "Ollama models:" << line;
+
+
+        if (line.contains(':')) {
+            QString modelName = line.split(':').first().trimmed();
+            modelNames << modelName;
+        }
+    }
+    
+    // Clear existing models in UI
+    ui->lw_models->clear();
+    ui->cb_models->clear();
+    ui->cb_available_models->clear();
+
+    // Add new models to UI
+    ui->lw_models->addItems(lines);
+    ui->cb_models->addItems(modelNames);
+    ui->cb_available_models->addItems(modelNames);
+    
+    // Update models in all chat tabs
+    for (int i = 1; i < ui->tabWidget->count(); i++) {
+        chatTab *tab = qobject_cast<chatTab*>(ui->tabWidget->widget(i));
+        if (tab) {
+            tab->setModels(modelNames);
+        }
+    }
 }
 
 void MainWindow::onAiResponseReceived(const QString &response)
@@ -158,6 +210,9 @@ void MainWindow::onNewChatActionTriggered()
     // Add the new tab with the chatTab widget
     ui->tabWidget->addTab(newChatTab, tabName);
     ui->tabWidget->setCurrentIndex(tabCount);   
+
+    QMessageBox::information(this, "New Chat", 
+                            QString("Creating new chat tab: %1").arg(tabName));
 }
 
 void MainWindow::onOpenChatActionTriggered()
